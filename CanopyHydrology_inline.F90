@@ -1,128 +1,291 @@
 subroutine CanopyHydrology
 
-  do f = 1, num_nolakep
-     p = filter_nolakep(f)
-     g = patch%gridcell(p)
-     l = patch%landunit(p)
-     c = patch%column(p)
+  ! Top-level associate statement would go here. All associates here would refer to bulk
+  ! quantities. So, when you see a bare variable in the code (not accessed via %), it
+  ! refers to bulk water.
 
-     ! Canopy interception and precipitation onto ground surface
-     ! Add precipitation to leaf water
+  ! Note about filters: I'm pretty sure that I'm missing some settings that need to be
+  ! done outside of the soil filter.
 
-     if (lun%itype(l)==istsoil .or. lun%itype(l)==istwet .or. lun%urbpoi(l) .or. &
-          lun%itype(l)==istcrop) then
+  ! ------------------------------------------------------------------------
+  ! Compute patch-level precipitation inputs for bulk and all tracers
+  ! ------------------------------------------------------------------------
 
-        qflx_snocanfall(p) = 0._r8      ! rate of just snow canopy fall
-        qflx_liqcanfall(p) = 0._r8
-        qflx_snowindunload(p) = 0._r8
-        qflx_snotempunload(p) = 0._r8
-        snounload(p)=0._r8
-        qflx_through_snow(p) = 0._r8 ! rain precipitation direct through canopy
-        qflx_through_rain(p) = 0._r8 ! snow precipitation direct through canopy
-        qflx_prec_intr(p) = 0._r8    ! total intercepted precipitation
+  do i = water_inst%bulk_and_tracers_beg, water_inst%bulk_and_tracers_end
+     associate( &
+          waterflux_inst => water_inst%bulk_and_tracers(i)%waterflux_inst, &
+          wateratm2lnd_inst => water_inst%bulk_and_tracers(i)%wateratm2lnd_inst &
+          )
 
+     do fp = 1, num_soilp
+        p = filter_soilp(fp)
+        c = patch%column(p)
 
-        if (col%itype(c) /= icol_sunwall .and. col%itype(c) /= icol_shadewall) then
-           if (frac_veg_nosno(p) == 1 .and. (forc_rain(c) + forc_snow(c) + qflx_irrig_sprinkler(p)) > 0._r8) then
+        waterflux_inst%qflx_liq_above_canopy_patch(p) = &
+             wateratm2lnd_inst%forc_rain_col(c) + &
+             waterflux_inst%qflx_irrig_sprinkler_patch(p)
 
-              ! total liquid water inputs above canopy
-              qflx_liq_above_canopy(p) = forc_rain(c)+ qflx_irrig_sprinkler(p)
+        wateratm2lnd_inst%forc_snow_patch(p) = wateratm2lnd_inst%forc_snow_col(c)
+     end do
+     end associate
+  end do
 
-              ! Coefficient of interception
-              if(use_clm5_fpi) then 
-                 fpi = interception_fraction * tanh(elai(p) + esai(p))
-              else
-                 fpi = 0.25_r8*(1._r8 - exp(-0.5_r8*(elai(p) + esai(p))))
-              endif
+  ! ------------------------------------------------------------------------
+  ! Compute canopy interception and throughfall for bulk
+  ! ------------------------------------------------------------------------
 
-              snocanmx = 60._r8*dewmx(p) * (elai(p) + esai(p))  ! 6*(LAI+SAI)
-              liqcanmx = dewmx(p) * (elai(p) + esai(p))
-
-              fpisnow = (1._r8 - exp(-0.5_r8*(elai(p) + esai(p))))  ! max interception of 1
-              ! Direct throughfall
-              qflx_through_snow(p) = forc_snow(c) * (1._r8-fpisnow)
-              qflx_through_rain(p) = qflx_liq_above_canopy(p) * (1._r8-fpi)
-
-              ! Intercepted precipitation [mm/s]
-              qflx_prec_intr(p) = forc_snow(c)*fpisnow + qflx_liq_above_canopy(p)*fpi
-              ! storage of intercepted snowfall, rain, and dew
-              snocan(p) = max(0._r8, snocan(p) + dtime*forc_snow(c)*fpisnow)
-              liqcan(p) = max(0._r8, liqcan(p) + dtime*qflx_liq_above_canopy(p)*fpi)
-
-              ! Initialize rate of canopy runoff and snow falling off canopy
-              qflx_snocanfall(p) = 0._r8
-              qflx_liqcanfall(p) = 0._r8
-              qflx_snowindunload(p) = 0._r8
-              qflx_snotempunload(p) = 0._r8
-              snounload(p)=0._r8
-
-              if (forc_t(c) > tfrz) then ! Above freezing (Use t_veg?)
-                 xliqrun = (liqcan(p) - liqcanmx)/dtime
-                 if (xliqrun > 0._r8) then
-                    qflx_liqcanfall(p) = xliqrun
-                    liqcan(p) = liqcanmx
-                 end if
-              else ! Below freezing
-                 xsnorun = (snocan(p) - snocanmx)/dtime
-                 if (xsnorun > 0._r8) then ! exceeds snow capacity
-                    qflx_snocanfall(p) = xsnorun
-                    snocan(p) = snocanmx
-                 end if
-              end if
-           end if
-        end if
-
-     else if (lun%itype(l)==istice_mec) then
-
-        qflx_through_snow(p) = 0._r8
-        qflx_through_rain(p) = 0._r8
-        qflx_prec_intr(p)    = 0._r8
-        snocan(p)            = 0._r8
-        liqcan(p)            = 0._r8
-        qflx_snocanfall(p)    = 0._r8
-        qflx_liqcanfall(p)    = 0._r8
-        qflx_snowindunload(p) = 0._r8 
-        qflx_snotempunload(p) = 0._r8 
-        snounload(p)=0._r8
-
-     end if
-
-     ! Precipitation onto ground (kg/(m2 s))
-
-     if (col%itype(c) /= icol_sunwall .and. col%itype(c) /= icol_shadewall) then
-        if (frac_veg_nosno(p) == 0) then
-           qflx_prec_grnd_snow(p) = forc_snow(c)
-           qflx_prec_grnd_rain(p) = forc_rain(c) + qflx_irrig_sprinkler(p)
+  ! Note: Previously this used a nolakep filter and set fluxes for all special landunits
+  ! other than lakes. I'm pretty sure the fluxes ended up as 0 everywhere other than
+  ! veg/crop. Here we use a soilp filter; this should give the same answers as long as we
+  ! initialize the relevant fluxes to 0 in initCold.
+  do fp = 1, num_soilp
+     p = filter_soilp(fp)
+     check_point_for_interception_and_excess(p) = &
+          (frac_veg_nosno(p) == 1 .and. (forc_snow(p) + qflx_liq_above_canopy(p)) > 0._r8)
+     if (check_point_for_interception_and_excess(p)) then
+        ! Coefficient of interception
+        if (use_clm5_fpi) then 
+           fpi = interception_fraction * tanh(elai(p) + esai(p))
         else
-           qflx_snowindunload(p)=0._r8 
-           qflx_snotempunload(p)=0._r8 
-           snounload(p)=0._r8
-           if (snocan(p) > 0._r8) then
-              qflx_snotempunload(p) = max(0._r8,snocan(p)*(forc_t(c)-270.15_r8)/1.87e5_r8) 
-              qflx_snowindunload(p) = 0.5_r8*snocan(p)*forc_wind(g)/1.56e5_r8 
-              snounload(p) = (qflx_snowindunload(p)+qflx_snotempunload(p))*dtime ! total canopy unloading in timestep
-              if ( snounload(p) > snocan(p) ) then ! Limit unloading to snow in canopy
-                 snounload(p) = snocan(p)
-              end if
-              snocan(p) = snocan(p) - snounload(p)
-           endif
-           qflx_prec_grnd_snow(p) = qflx_through_snow(p) + qflx_snocanfall(p)  + snounload(p)/dtime
-           qflx_prec_grnd_rain(p) = qflx_through_rain(p) + qflx_liqcanfall(p) 
+           fpi = 0.25_r8*(1._r8 - exp(-0.5_r8*(elai(p) + esai(p))))
         end if
-        ! Urban sunwall and shadewall have no intercepted precipitation
+
+        fpisnow = (1._r8 - exp(-0.5_r8*(elai(p) + esai(p))))  ! max interception of 1
+
+        ! Direct throughfall
+        qflx_through_snow(p) = forc_snow(p) * (1._r8-fpisnow)
+        qflx_through_rain(p) = qflx_liq_above_canopy(p) * (1._r8-fpi)
+
+        ! Canopy interception
+        qflx_intercepted_snow(p) = forc_snow(p) * fpisnow
+        qflx_intercepted_rain(p) = qflx_liq_above_canopy(p) * fpi
+
      else
-        qflx_prec_grnd_snow(p) = 0.
-        qflx_prec_grnd_rain(p) = 0.
+        ! Note: setting qflx_through_snow = forc_snow and qflx_through_rain =
+        ! qflx_liq_above_canopy could change answers from the earlier logic if either of
+        ! these could ever be negative.
+        qflx_through_snow(p) = forc_snow(p)
+        qflx_through_rain(p) = qflx_liq_above_canopy(p)
+        qflx_intercepted_snow(p) = 0._r8
+        qflx_intercepted_rain(p) = 0._r8
      end if
+  end do
 
-     ! Add irrigation water directly onto ground (bypassing canopy interception)
-     ! Note that it's still possible that (some of) this irrigation water will runoff (as runoff is computed later)
-     qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p) + qflx_irrig_drip(p)
+  ! ------------------------------------------------------------------------
+  ! Compute tracer versions of canopy interception and throughfall
+  ! ------------------------------------------------------------------------
 
-     qflx_prec_grnd(p) = qflx_prec_grnd_snow(p) + qflx_prec_grnd_rain(p)
+  do i = water_inst%tracers_beg, water_inst%tracers_end
+     associate(tracer => water_inst%bulk_and_tracers(i))
 
-     qflx_snow_grnd_patch(p) = qflx_prec_grnd_snow(p)           ! ice onto ground (mm/s)
-     qflx_rain_grnd(p)       = qflx_prec_grnd_rain(p)           ! liquid water onto ground (mm/s)
+     call CalcTracerFromBulk( &
+          lb            = begp, &
+          num_pts       = num_soilp, &
+          filter_pts    = filter_soilp, &
+          bulk_source   = forc_snow(begp:endp), &
+          bulk_val      = qflx_through_snow(begp:endp), &
+          tracer_source = tracer%wateratm2lnd_inst%forc_snow_patch(begp:endp), &
+          tracer_val    = tracer%waterflux_inst%qflx_through_snow_patch(begp:endp))
 
-  end do ! (end patch loop)
+     call CalcTracerFromBulk( &
+          lb            = begp, &
+          num_pts       = num_soilp, &
+          filter_pts    = filter_soilp, &
+          bulk_source   = forc_snow(begp:endp), &
+          bulk_val      = qflx_intercepted_snow(begp:endp), &
+          tracer_source = tracer%wateratm2lnd_inst%forc_snow_patch(begp:endp), &
+          tracer_val    = tracer%waterflux_inst%qflx_intercepted_snow_patch(begp:endp))
+
+     call CalcTracerFromBulk( &
+          lb            = begp, &
+          num_pts       = num_soilp, &
+          filter_pts    = filter_soilp, &
+          bulk_source   = qflx_liq_above_canopy(begp:endp), &
+          bulk_val      = qflx_through_rain(begp:endp), &
+          tracer_source = tracer%waterflux_inst%qflx_liq_above_canopy_patch(begp:endp), &
+          tracer_val    = tracer%waterflux_inst%qflx_through_rain_patch(begp:endp))
+
+     call CalcTracerFromBulk( &
+          lb            = begp, &
+          num_pts       = num_soilp, &
+          filter_pts    = filter_soilp, &
+          bulk_source   = qflx_liq_above_canopy(begp:endp), &
+          bulk_val      = qflx_intercepted_rain(begp:endp), &
+          tracer_source = tracer%waterflux_inst%qflx_liq_above_canopy_patch(begp:endp), &
+          tracer_val    = tracer%waterflux_inst%qflx_intercepted_rain_patch(begp:endp))
+
+     end associate
+  end do
+
+  ! ------------------------------------------------------------------------
+  ! Update snocan and liqcan based on interception, for bulk and all tracers
+  ! ------------------------------------------------------------------------
+
+  do i = water_inst%bulk_and_tracers_beg, water_inst%bulk_and_tracers_end
+     associate( &
+          waterstate_inst => water_inst%bulk_and_tracers(i)%waterstate_inst, &
+          waterflux_inst => water_inst%bulk_and_tracers(i)%waterflux_inst &
+          )
+
+     do fp = 1, num_soilp
+        p = filter_soilp(fp)
+
+        waterstate_inst%snocan_patch(p) = max(0._r8, &
+             waterstate_inst%snocan_patch(p) + &
+             dtime * waterflux_inst%qflx_intercepted_snow_patch(p))
+
+        waterstate_inst%liqcan_patch(p) = max(0._r8, &
+             waterstate_inst%liqcan_patch(p) + &
+             dtime * waterflux_inst%qflx_intercepted_rain_patch(p))
+     end do
+     end associate
+  end do
+
+  ! ------------------------------------------------------------------------
+  ! Compute runoff from canopy due to exceeding maximum storage, for bulk
+  ! ------------------------------------------------------------------------
+
+  do fp = 1, num_soilp
+     p = filter_soilp(fp)
+     qflx_snocanfall(p) = 0._r8
+     qflx_liqcanfall(p) = 0._r8
+
+     if (check_point_for_interception_and_excess(p)) then
+        if (forc_t(c) > tfrz) then ! Above freezing (Use t_veg?)
+           liqcanmx = dewmx(p) * (elai(p) + esai(p))
+           qflx_liqcanfall(p) = max((liqcan(p) - liqcanmx)/dtime, 0._r8)
+        else ! Below freezing
+           snocanmx = 60._r8*dewmx(p) * (elai(p) + esai(p))  ! 6*(LAI+SAI)
+           qflx_snocanfall(p) = max((snocan(p) - snocanmx)/dtime, 0._r8)
+        end if
+     end if
+  end do
+
+  ! ------------------------------------------------------------------------
+  ! Compute tracer versions of qflx_liqcanfall and qflx_snocanfall
+  ! ------------------------------------------------------------------------
+
+  do i = water_inst%tracers_beg, water_inst%tracers_end
+     associate(tracer => water_inst%bulk_and_tracers(i))
+
+     call CalcTracerFromBulk( &
+          lb            = begp, &
+          num_pts       = num_soilp, &
+          filter_pts    = filter_soilp, &
+          bulk_source   = liqcan(begp:endp), &
+          bulk_val      = qflx_liqcanfall(begp:endp), &
+          tracer_source = tracer%waterstate_inst%liqcan_patch(begp:endp), &
+          tracer_val    = tracer%waterflux_inst%qflx_liqcanfall_patch(begp:endp))
+
+     call CalcTracerFromBulk( &
+          lb            = begp, &
+          num_pts       = num_soilp, &
+          filter_pts    = filter_soilp, &
+          bulk_source   = snocan(begp:endp), &
+          bulk_val      = qflx_snocanfall(begp:endp), &
+          tracer_source = tracer%waterstate_inst%snocan_patch(begp:endp), &
+          tracer_val    = tracer%waterflux_inst%qflx_snocanfall_patch(begp:endp))
+     end associate
+  end do
+
+  ! ------------------------------------------------------------------------
+  ! Update snocan and liqcan based on canfall, for bulk and all tracers
+  ! ------------------------------------------------------------------------
+
+  do i = water_inst%bulk_and_tracers_beg, water_inst%bulk_and_tracers_end
+     associate( &
+          waterstate_inst => water_inst%bulk_and_tracers(i)%waterstate_inst, &
+          waterflux_inst => water_inst%bulk_and_tracers(i)%waterflux_inst &
+          )
+
+     do fp = 1, num_soilp
+        p = filter_soilp(fp)
+
+        waterstate_inst%liqcan_patch(p) = waterstate_inst%liqcan_patch(p) - &
+             dtime * waterflux_inst%qflx_liqcanfall_patch(p)
+
+        waterstate_inst%snocan_patch(p) = waterstate_inst%snocan_patch(p) - &
+             dtime * waterflux_inst%qflx_snocanfall_patch(p)
+     end do
+     end associate
+  end do
+
+  ! ------------------------------------------------------------------------
+  ! Compute snow unloading for bulk
+  ! ------------------------------------------------------------------------
+
+  do fp = 1, num_soilp
+     p = filter_soilp(fp)
+     c = patch%column(p)
+     qflx_snow_unload(p) = 0._r8
+     if (frac_veg_nosno(p) == 1 .and. snocan(p) > 0._r8) then
+        qflx_snow_temp_unload = max(0._r8,snocan(p)*(forc_t(c)-270.15_r8)/1.87e5_r8)
+        qflx_snow_wind_unload = 0.5_r8*snocan(p)*forc_wind(g)/1.56e5_r8
+        qflx_snow_unload(p) = min(qflx_snow_temp_unload + qflx_snow_wind_unload, snocan(p))
+     end if
+  end do
+
+  ! ------------------------------------------------------------------------
+  ! Compute tracer version of snow unloading
+  ! ------------------------------------------------------------------------
+
+  do i = water_inst%tracers_beg, water_inst%tracers_end
+     associate(tracer => water_inst%bulk_and_tracers(i))
+
+     call CalcTracerFromBulk( &
+          lb            = begp, &
+          num_pts       = num_soilp, &
+          filter_pts    = filter_soilp, &
+          bulk_source   = snocan(begp:endp), &
+          bulk_val      = qflx_snow_unload(begp:endp), &
+          tracer_source = tracer%waterstate_inst%snocan_patch(begp:endp), &
+          tracer_val    = tracer%waterflux_inst%qflx_snow_unload_patch(begp:endp))
+     end associate
+  end do
+
+  ! ------------------------------------------------------------------------
+  ! Update snocan based on snow unloading, for bulk and all tracers
+  ! ------------------------------------------------------------------------
+
+  do i = water_inst%bulk_and_tracers_beg, water_inst%bulk_and_tracers_end
+     associate( &
+          waterstate_inst => water_inst%bulk_and_tracers(i)%waterstate_inst, &
+          waterflux_inst => water_inst%bulk_and_tracers(i)%waterflux_inst &
+          )
+
+     do fp = 1, num_soilp
+        p = filter_soilp(fp)
+
+        waterstate_inst%snocan_patch(p) = &
+             waterstate_inst%snocan_patch(p) - &
+             dtime * waterflux_inst%qflx_snow_unload_patch(p)
+     end do
+     end associate
+  end do
+
+  ! ------------------------------------------------------------------------
+  ! Compute summed fluxes onto ground, for bulk and all tracers
+  ! ------------------------------------------------------------------------
+
+  do i = water_inst%bulk_and_tracers_beg, water_inst%bulk_and_tracers_end
+     associate( &
+          waterflux_inst => water_inst%bulk_and_tracers(i)%waterflux_inst &
+          )
+
+     do fp = 1, num_soilp
+        p = filter_soilp(fp)
+
+        waterflux_inst%qflx_snow_grnd_patch(p) = &
+             waterflux_inst%qflx_through_snow_patch(p) + &
+             waterflux_inst%qflx_snocanfall_patch(p) + &
+             waterflux_inst%qflx_snow_unload_patch(p)
+
+        waterflux_inst%qflx_rain_grnd_patch(p) = &
+             waterflux_inst%qflx_through_rain_patch(p) + &
+             waterflux_inst%qflx_liqcanfall_patch(p) + &
+             waterflux_inst%qflx_irrig_drip_patch(p)
+     end do
+     end associate
+  end do
+
 end subroutine CanopyHydrology
