@@ -151,13 +151,10 @@ subroutine CanopyHydrology
      qflx_liqcanfall(p) = 0._r8
 
      if (check_point_for_interception_and_excess(p)) then
-        if (forc_t(c) > tfrz) then ! Above freezing (Use t_veg?)
-           liqcanmx = dewmx(p) * (elai(p) + esai(p))
-           qflx_liqcanfall(p) = max((liqcan(p) - liqcanmx)/dtime, 0._r8)
-        else ! Below freezing
-           snocanmx = 60._r8*dewmx(p) * (elai(p) + esai(p))  ! 6*(LAI+SAI)
-           qflx_snocanfall(p) = max((snocan(p) - snocanmx)/dtime, 0._r8)
-        end if
+        liqcanmx = dewmx(p) * (elai(p) + esai(p))
+        qflx_liqcanfall(p) = max((liqcan(p) - liqcanmx)/dtime, 0._r8)
+        snocanmx = 60._r8*dewmx(p) * (elai(p) + esai(p))  ! 6*(LAI+SAI)
+        qflx_snocanfall(p) = max((snocan(p) - snocanmx)/dtime, 0._r8)
      end if
   end do
 
