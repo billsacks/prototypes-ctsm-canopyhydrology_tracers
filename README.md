@@ -11,6 +11,14 @@
   top-level subroutine? Everything? Just state updates? Just tracer
   updates? Just state updates + tracer updates?
   
+- What (if anything) of the split-out things should be lumped together
+  into a single subroutine, vs. each logically coherent thing being in
+  its own subroutine? For example: we could combine the update of
+  snocan based on snow unloading with the computation of summed fluxes
+  onto ground, because both operate over bulk + all tracers. But
+  *should* we? Similarly, we could combine the setting of tracer fluxes
+  with the related state updates.
+  
 - For subroutines that operate on all tracers (or bulk + all tracers):
   should the loop over tracers be inside or outside the subroutine? Note
   that I have done something different for the allBrokenOut
@@ -26,13 +34,6 @@
   arrays? The former leads to simpler, more stable interfaces, but the
   latter does a better job at showing data flow.
 
-- What (if anything) of the split-out things should be lumped together
-  into a single subroutine, vs. each logically coherent thing being in
-  its own subroutine? (For example: we could combine the update of
-  snocan based on snow unloading with the computation of summed fluxes
-  onto ground, because both operate over bulk + all tracers. But
-  *should* we?)
-  
 # Reasons I was at least initially inclined to having things broken out
 
 - I like the rule that routines that have interesting science shouldn't
