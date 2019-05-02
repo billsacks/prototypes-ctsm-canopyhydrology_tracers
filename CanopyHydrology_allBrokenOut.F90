@@ -1,4 +1,4 @@
-subroutine CanopyHydrology(bounds, filter, water_inst, col)
+subroutine CanopyHydrology(bounds, num_soilp, filter_soilp, patch, water_inst)
 
   ! Note about filters: I'm pretty sure that I'm missing some settings that need to be
   ! done outside of the soil filter.
