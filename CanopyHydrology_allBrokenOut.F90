@@ -1,4 +1,4 @@
-subroutine CanopyHydrology
+subroutine CanopyHydrology(bounds, filter, water_inst, col)
 
   ! Note about filters: I'm pretty sure that I'm missing some settings that need to be
   ! done outside of the soil filter.
@@ -7,66 +7,66 @@ subroutine CanopyHydrology
      ! A possible improvement for this and other calls that operate on bulk or
      ! bulk+tracers would be passing individual arrays rather than whole instances. This
      ! way, you could trace the data flow through the routine.
-     call PrecipInputs(num_soilp, filter_soilp, &
+     call SumFlux_PrecipInputs(num_soilp, filter_soilp, &
           water_inst%bulk_and_tracers(i)%waterflux_inst, &
           water_inst%bulk_and_tracers(i)%wateratm2lnd_inst)
   end do
 
-  call BulkCanopyInterceptionAndThroughfall(bounds, num_soilp, filter_soilp, &
+  call BulkFlux_CanopyInterceptionAndThroughfall(bounds, num_soilp, filter_soilp, &
        ! and some other inputs...
        water_inst%waterfluxbulk_inst, &
        check_point_for_interception_and_excess = check_point_for_interception_and_excess(begp:endp))
 
   do i = water_inst%tracers_beg, water_inst%tracers_end
-     call TracerCanopyInterceptionAndThroughfall(bounds, num_soilp, filter_soilp, &
+     call TracerFlux_CanopyInterceptionAndThroughfall(bounds, num_soilp, filter_soilp, &
           water_inst%wateratm2lndbulk_inst, water_inst%waterfluxbulk_inst, &
           water_inst%bulk_and_tracers(i)%wateratm2lnd_inst, &
           water_inst%bulk_and_tracers(i)%waterflux_inst)
   end do
 
   do i = water_inst%bulk_and_tracers_beg, water_inst%bulk_and_tracers_end
-     call AddInterceptionToCanopy(num_soilp, filter_soilp, &
+     call UpdateState_AddInterceptionToCanopy(num_soilp, filter_soilp, &
           water_inst%bulk_and_tracers(i)%waterflux_inst, &
           water_inst%bulk_and_tracers(i)%waterstate_inst)
   end do
 
-  call BulkCanopyExcess(bounds, num_soilp, filter_soilp, &
+  call BulkFlux_CanopyExcess(bounds, num_soilp, filter_soilp, &
        waterstatebulk_inst, &  ! and some other inputs...
        waterfluxbulk_inst, &
        check_point_for_interception_and_excess = check_point_for_interception_and_excess(begp:endp))
 
   do i = water_inst%tracers_beg, water_inst%tracers_end
-     call TracerCanopyExcess(bounds, num_soilp, filter_soilp, &
+     call TracerFlux_CanopyExcess(bounds, num_soilp, filter_soilp, &
           water_inst%waterstatebulk_inst, water_inst%waterfluxbulk_inst, &
           water_inst%bulk_and_tracers(i)%waterstate_inst, &
           water_inst%bulk_and_tracers(i)%waterflux_inst)
   end do
 
   do i = water_inst%bulk_and_tracers_beg, water_inst%bulk_and_tracers_end
-     call RemoveCanfallFromCanopy(num_soilp, filter_soilp, &
+     call UpdateState_RemoveCanfallFromCanopy(num_soilp, filter_soilp, &
           water_inst%bulk_and_tracers(i)%waterflux_inst, &
           water_inst%bulk_and_tracers(i)%waterstate_inst)
   end do
 
-  call BulkSnowUnloading(num_soilp, filter_soilp, &
+  call BulkFlux_SnowUnloading(num_soilp, filter_soilp, &
        waterstatebulk_inst, &  ! and some other inputs...
        waterfluxbulk_inst)
 
   do i = water_inst%tracers_beg, water_inst%tracers_end
-     call TracerSnowUnloading(bounds, num_soilp, filter_soilp, &
+     call TracerFlux_SnowUnloading(bounds, num_soilp, filter_soilp, &
           water_inst%waterstatebulk_inst, water_inst%waterfluxbulk_inst, &
           water_inst%bulk_and_tracers(i)%waterstate_inst, &
           water_inst%bulk_and_tracers(i)%waterflux_inst)
   end do
 
   do i = water_inst%bulk_and_tracers_beg, water_inst%bulk_and_tracers_end
-     call RemoveSnowUnloading(num_soilp, filter_soilp, &
+     call UpdateState_RemoveSnowUnloading(num_soilp, filter_soilp, &
           water_inst%bulk_and_tracers(i)%waterflux_inst, &
           water_inst%bulk_and_tracers(i)%waterstate_inst)
   end do
 
   do i = water_inst%bulk_and_tracers_beg, water_inst%bulk_and_tracers_end
-     call FluxesOntoGround(num_soilp, filter_soilp, &
+     call SumFlux_OntoGround(num_soilp, filter_soilp, &
           water_inst%bulk_and_tracers(i)%waterflux_inst)
   end do
 

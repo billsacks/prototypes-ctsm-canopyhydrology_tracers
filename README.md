@@ -1,9 +1,18 @@
+# Notes about this document
+
+Most thoughts here are from Bill Sacks. Comments labeled "From
+discussion" refer to a discussion (2019-05-02) between Bill and: Mike
+Barlage, Erik Kluzek, Negin Sobhani, Sean Swenson and Mariana
+Vertenstein.
+
 # Some notes
 
 - There were some temporary, subroutine-local fluxes that I need to
   change to being in WaterFluxType, because now we need a separate
   version for each tracer. (I don't love this, but I can't see a clean
   way around it.)
+  
+  **From discussion:** People are okay with this.
 
 # Some questions: organizing into subroutines
 
@@ -18,6 +27,8 @@
   onto ground, because both operate over bulk + all tracers. But
   *should* we? Similarly, we could combine the setting of tracer fluxes
   with the related state updates.
+  
+  **From discussion:** Let's start with what we have now.
   
 - For subroutines that operate on all tracers (or bulk + all tracers):
   should the loop over tracers be inside or outside the subroutine? Note
@@ -46,7 +57,10 @@
   operate on bulk water or bulk+tracers) could be a compromise for the
   allBrokenOut solution, allowing you to at least see data flow in that
   solution.
-
+  
+  **From discussion:** Pass individual arrays for anything that operates
+  on bulk. For things just calculating tracer fluxes, no strong
+  feelings.
 
 # Reasons I was at least initially inclined to having things broken out
 
@@ -114,3 +128,40 @@ Arguments for (2):
   tracer updates
 
 - It may perform better in some cases
+
+**From discussion:** No real opinions
+
+# Other notes from discussion
+
+## General feelings on options
+
+People are happy with everything broken out.
+
+## Short-circuiting some state updates?
+
+Sean: Can we short-circuit some state updates? In particular: For canopy
+excess, can we avoid doing the update of liqcan, instead calculating the
+excess and putting it in a runoff flux without ever updating liqcan to
+be greater than the holding capacity?
+
+Mike points out that this would have different implications for the
+tracer concentration: the current scheme mixes together the inputs with
+the existing state, whereas Sean's suggestion doesn't do this mixing
+before the runoff.
+
+We like Sean's idea for bulk, but aren't sure if that's the right thing
+to do with respect to tracers. Let's come back to this....
+
+## Naming
+
+Rename PrecipInputs to make it clear that irrigation is added?
+
+## Avoiding use statements
+
+Let's pass col directly rather than using it.
+
+## Comments about state vs. flux
+
+Comment whether something is a state update?
+
+Actually, use prefixes
