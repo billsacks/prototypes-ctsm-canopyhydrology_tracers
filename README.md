@@ -25,7 +25,7 @@
   arrays? The former leads to simpler, more stable interfaces, but the
   latter does a better job at showing data flow.
 
-# Reasons I was initially inclined to having things broken out
+# Reasons I was at least initially inclined to having things broken out
 
 - I like the rule that routines that have interesting science shouldn't
   be complicated / obscured by tracer-related code. This is violated by
