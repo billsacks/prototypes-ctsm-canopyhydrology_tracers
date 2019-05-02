@@ -52,7 +52,8 @@
 
 - I like the rule that routines that have interesting science shouldn't
   be complicated / obscured by tracer-related code. This is violated by
-  the inline option, and to a lesser extent by the
+  the inline option, to a lesser extent by the tracersBrokenOut option,
+  and to an even lesser (but non-zero) extent by the
   tracersAndStatesBrokenOut option.
 
 - I like having routines either be coordination routines or calculation
