@@ -11,6 +11,21 @@
   top-level subroutine? Everything? Just state updates? Just tracer
   updates? Just state updates + tracer updates?
   
+- For subroutines that operate on all tracers (or bulk + all tracers):
+  should the loop over tracers be inside or outside the subroutine? Note
+  that I have done something different for the allBrokenOut
+  vs. tracersAndStatesBrokenOut options. I did what made the most sense
+  to me for each of these, but it doesn't need to be the way it is for
+  either of those. Also note: having the loop outside the subroutine
+  makes it simpler to have associates for individual variables inside
+  the subroutine. It's possible to have associates for individual
+  variables otherwise, but this should probably be done via nested
+  associates, which gets a bit more complex.
+  
+- Should we pass derived types into the subroutines or individual
+  arrays? The former leads to simpler, more stable interfaces, but the
+  latter does a better job at showing data flow.
+
 - What (if anything) of the split-out things should be lumped together
   into a single subroutine, vs. each logically coherent thing being in
   its own subroutine? (For example: we could combine the update of
@@ -18,13 +33,6 @@
   onto ground, because both operate over bulk + all tracers. But
   *should* we?)
   
-- For subroutines that operate on all tracers (or bulk + all tracers):
-  should the loop over tracers be inside or outside the subroutine?
-  
-- Should we pass derived types into the subroutines or individual
-  arrays? The former leads to simpler, more stable interfaces, but the
-  latter does a better job at showing data flow.
-
 # Reasons I was at least initially inclined to having things broken out
 
 - I like the rule that routines that have interesting science shouldn't
