@@ -7,7 +7,7 @@ subroutine CanopyHydrology(bounds, filter, water_inst, col)
      ! A possible improvement for this and other calls that operate on bulk or
      ! bulk+tracers would be passing individual arrays rather than whole instances. This
      ! way, you could trace the data flow through the routine.
-     call SumFlux_PrecipInputs(num_soilp, filter_soilp, &
+     call SumFlux_TopOfCanopyInputs(num_soilp, filter_soilp, &
           water_inst%bulk_and_tracers(i)%waterflux_inst, &
           water_inst%bulk_and_tracers(i)%wateratm2lnd_inst)
   end do
@@ -72,7 +72,7 @@ subroutine CanopyHydrology(bounds, filter, water_inst, col)
 
 end subroutine CanopyHydrology
 
-subroutine PrecipInputs(num_soilp, filter_soilp, waterflux_inst, wateratm2lnd_inst)
+subroutine SumFlux_TopOfCanopyInputs(num_soilp, filter_soilp, waterflux_inst, wateratm2lnd_inst)
   ! Compute patch-level precipitation inputs for bulk water or one tracer
   integer, intent(in) :: num_soilp
   integer, intent(in) :: filter_soilp(:)
@@ -89,9 +89,9 @@ subroutine PrecipInputs(num_soilp, filter_soilp, waterflux_inst, wateratm2lnd_in
 
      forc_snow_patch(p) = forc_snow_col(c)
   end do
-end subroutine PrecipInputs
+end subroutine SumFlux_PrecipInputs
 
-subroutine BulkCanopyInterceptionAndThroughfall(bounds, num_soilp, filter_soilp, &
+subroutine BulkFlux_CanopyInterceptionAndThroughfall(bounds, num_soilp, filter_soilp, &
      ! and some other inputs...
      waterfluxbulk_inst, check_point_for_interception_and_excess)
   ! Compute canopy interception and throughfall for bulk water
@@ -140,9 +140,9 @@ subroutine BulkCanopyInterceptionAndThroughfall(bounds, num_soilp, filter_soilp,
         qflx_intercepted_rain(p) = 0._r8
      end if
   end do
-end subroutine BulkCanopyInterceptionAndThroughfall
+end subroutine BulkFlux_CanopyInterceptionAndThroughfall
 
-subroutine TracerCanopyInterceptionAndThroughfall(bounds, num_soilp, filter_soilp, &
+subroutine TracerFlux_CanopyInterceptionAndThroughfall(bounds, num_soilp, filter_soilp, &
      wateratm2lndbulk_inst, waterfluxbulk_inst, &
      wateratm2lnd_tracer_inst, waterflux_tracer_inst)
   ! Calculate canopy interception and throughfall for one tracer
@@ -189,9 +189,9 @@ subroutine TracerCanopyInterceptionAndThroughfall(bounds, num_soilp, filter_soil
        bulk_val      = waterfluxbulk_inst%qflx_intercepted_rain(begp:endp), &
        tracer_source = waterflux_tracer_inst%qflx_liq_above_canopy_patch(begp:endp), &
        tracer_val    = waterflux_tracer_inst%qflx_intercepted_rain_patch(begp:endp))
-end subroutine TracerCanopyInterceptionAndThroughfall
+end subroutine TracerFlux_CanopyInterceptionAndThroughfall
 
-subroutine AddInterceptionToCanopy(num_soilp, filter_soilp, waterflux_inst, waterstate_inst)
+subroutine UpdateState_AddInterceptionToCanopy(num_soilp, filter_soilp, waterflux_inst, waterstate_inst)
   ! Update snocan and liqcan based on interception, for bulk or one tracer
   integer, intent(in) :: num_soilp
   integer, intent(in) :: filter_soilp(:)
@@ -206,9 +206,9 @@ subroutine AddInterceptionToCanopy(num_soilp, filter_soilp, waterflux_inst, wate
      snocan_patch(p) = max(0._r8, snocan_patch(p) + dtime * qflx_intercepted_snow_patch(p))
      liqcan_patch(p) = max(0._r8, liqcan_patch(p) + dtime * qflx_intercepted_rain_patch(p))
   end do
-end subroutine AddInterceptionToCanopy
+end subroutine UpdateState_AddInterceptionToCanopy
 
-subroutine BulkCanopyExcess(bounds, num_soilp, filter_soilp, &
+subroutine BulkFlux_CanopyExcess(bounds, num_soilp, filter_soilp, &
      waterstatebulk_inst, &  ! and some other inputs...
      waterfluxbulk_inst, &
      check_point_for_interception_and_excess)
@@ -236,9 +236,9 @@ subroutine BulkCanopyExcess(bounds, num_soilp, filter_soilp, &
      end if
   end do
 
-end subroutine BulkCanopyExcess
+end subroutine BulkFlux_CanopyExcess
 
-subroutine TracerCanopyExcess(bounds, num_soilp, filter_soilp, &
+subroutine TracerFlux_CanopyExcess(bounds, num_soilp, filter_soilp, &
      waterstatebulk_inst, waterfluxbulk_inst, &
      waterstate_tracer_inst, waterflux_tracer_inst)
   ! Calculate runoff from canopy due to exceeding maximum storage, for one tracer
@@ -267,9 +267,9 @@ subroutine TracerCanopyExcess(bounds, num_soilp, filter_soilp, &
        bulk_val      = waterfluxbulk_inst%qflx_snocanfall(begp:endp), &
        tracer_source = waterstate_tracer_inst%snocan_patch(begp:endp), &
        tracer_val    = waterflux_tracer_inst%qflx_snocanfall_patch(begp:endp))
-end subroutine TracerCanopyExcess
+end subroutine TracerFlux_CanopyExcess
 
-subroutine RemoveCanfallFromCanopy(num_soilp, filter_soilp, waterflux_inst, waterstate_inst)
+subroutine UpdateState_RemoveCanfallFromCanopy(num_soilp, filter_soilp, waterflux_inst, waterstate_inst)
   ! Update snocan and liqcan based on canfall, for bulk or one tracer
   integer, intent(in) :: num_soilp
   integer, intent(in) :: filter_soilp(:)
@@ -284,9 +284,9 @@ subroutine RemoveCanfallFromCanopy(num_soilp, filter_soilp, waterflux_inst, wate
      liqcan_patch(p) = liqcan_patch(p) - dtime * qflx_liqcanfall_patch(p)
      snocan_patch(p) = snocan_patch(p) - dtime * qflx_snocanfall_patch(p)
   end do
-end subroutine RemoveCanfallFromCanopy
+end subroutine UpdateState_RemoveCanfallFromCanopy
 
-subroutine BulkSnowUnloading(num_soilp, filter_soilp, &
+subroutine BulkFlux_SnowUnloading(num_soilp, filter_soilp, &
      waterstatebulk_inst, &  ! and some other inputs...
      waterfluxbulk_inst)
   ! Compute snow unloading for bulk
@@ -308,9 +308,9 @@ subroutine BulkSnowUnloading(num_soilp, filter_soilp, &
         qflx_snow_unload(p) = min(qflx_snow_temp_unload + qflx_snow_wind_unload, snocan(p))
      end if
   end do
-end subroutine BulkSnowUnloading
+end subroutine BulkFlux_SnowUnloading
 
-subroutine TracerSnowUnloading(bounds, num_soilp, filter_soilp, &
+subroutine TracerFlux_SnowUnloading(bounds, num_soilp, filter_soilp, &
      waterstatebulk_inst, waterfluxbulk_inst, &
      waterstate_tracer_inst, waterflux_tracer_inst)
   ! Compute snow unloading for one tracer
@@ -330,9 +330,9 @@ subroutine TracerSnowUnloading(bounds, num_soilp, filter_soilp, &
        bulk_val      = waterfluxbulk_inst%qflx_snow_unload(begp:endp), &
        tracer_source = waterstate_tracer_inst%snocan_patch(begp:endp), &
        tracer_val    = waterflux_tracer_inst%qflx_snow_unload_patch(begp:endp))
-end subroutine TracerSnowUnloading
+end subroutine TracerFlux_SnowUnloading
 
-subroutine RemoveSnowUnloading(num_soilp, filter_soilp, waterflux_inst, waterstate_inst)
+subroutine UpdateState_RemoveSnowUnloading(num_soilp, filter_soilp, waterflux_inst, waterstate_inst)
   ! Update snocan based on snow unloading, for bulk or one tracer
   integer, intent(in) :: num_soilp
   integer, intent(in) :: filter_soilp(:)
@@ -346,9 +346,9 @@ subroutine RemoveSnowUnloading(num_soilp, filter_soilp, waterflux_inst, watersta
 
      snocan_patch(p) = snocan_patch(p) - dtime * qflx_snow_unload_patch(p)
   end do
-end subroutine RemoveSnowUnloading
+end subroutine UpdateState_RemoveSnowUnloading
 
-subroutine FluxesOntoGround(num_soilp, filter_soilp, waterflux_inst)
+subroutine SumFlux_FluxesOntoGround(num_soilp, filter_soilp, waterflux_inst)
   ! Compute summed fluxes onto ground, for bulk or one tracer
   integer, intent(in) :: num_soilp
   integer, intent(in) :: filter_soilp(:)
@@ -369,4 +369,4 @@ subroutine FluxesOntoGround(num_soilp, filter_soilp, waterflux_inst)
           qflx_liqcanfall_patch(p) + &
           qflx_irrig_drip_patch(p)
   end do
-end subroutine FluxesOntoGround
+end subroutine SumFlux_FluxesOntoGround
