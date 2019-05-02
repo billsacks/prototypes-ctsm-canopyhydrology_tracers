@@ -4,6 +4,9 @@ subroutine CanopyHydrology
   ! done outside of the soil filter.
 
   do i = water_inst%bulk_and_tracers_beg, water_inst%bulk_and_tracers_end
+     ! A possible improvement for this and other calls that operate on bulk or
+     ! bulk+tracers would be passing individual arrays rather than whole instances. This
+     ! way, you could trace the data flow through the routine.
      call PrecipInputs(num_soilp, filter_soilp, &
           water_inst%bulk_and_tracers(i)%waterflux_inst, &
           water_inst%bulk_and_tracers(i)%wateratm2lnd_inst)

@@ -32,7 +32,21 @@
   
 - Should we pass derived types into the subroutines or individual
   arrays? The former leads to simpler, more stable interfaces, but the
-  latter does a better job at showing data flow.
+  latter does a better job at showing data flow. However, the latter is
+  only possible if the loop over tracers is outside the call. We could
+  also mix & match, passing individual arrays for stuff that works on
+  bulk as well as tracers, but just passing `water_inst` for things that
+  are tracer-only: this way you could at least see the data flow for
+  bulk. In the solutions where we inline the bulk flux calculations:
+  Passing individual arrays may have the most benefit for subroutines
+  that involve bulk, but there is little enough work in those routines
+  that, by the time we have the loop over instances and the
+  many-argument calls, I think I'd prefer to just inline this
+  code. However, passing individual arrays (at least for routines that
+  operate on bulk water or bulk+tracers) could be a compromise for the
+  allBrokenOut solution, allowing you to at least see data flow in that
+  solution.
+
 
 # Reasons I was at least initially inclined to having things broken out
 
@@ -54,6 +68,12 @@
 - Putting state updates in their own routine is a step closer to being
   able to separate physics from numerics (at least, I *think* that will
   help long-term)
+  
+- I worry that having everything inlined will lead to more degradation
+  of the code over time: sections will grow and start to include things
+  that they shouldn't, rather than keeping individual pieces more
+  logically separated. (e.g., someone will put something in the state
+  update section that doesn't belong there.)
 
 # Question about calculating the tracer version of fluxes
 
