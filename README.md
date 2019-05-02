@@ -20,6 +20,9 @@ Vertenstein.
   top-level subroutine? Everything? Just state updates? Just tracer
   updates? Just state updates + tracer updates?
   
+  **From discussion:** See notes below, under the "other notes from
+  discussion" heading.
+  
 - What (if anything) of the split-out things should be lumped together
   into a single subroutine, vs. each logically coherent thing being in
   its own subroutine? For example: we could combine the update of
@@ -135,7 +138,10 @@ Arguments for (2):
 
 ## General feelings on options
 
-People are happy with everything broken out.
+People are happy with everything broken out. (Note: we examined the
+inline and everything-broken-out options. We did not examine
+intermediate solutions because people were happy with the
+everything-broken-out option.)
 
 ## Short-circuiting some state updates?
 
