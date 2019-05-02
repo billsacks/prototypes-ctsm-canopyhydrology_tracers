@@ -20,8 +20,13 @@ Vertenstein.
   top-level subroutine? Everything? Just state updates? Just tracer
   updates? Just state updates + tracer updates?
   
-  **From discussion:** See notes below, under the "other notes from
-  discussion" heading.
+  **From discussion:** People are happy with everything broken
+  out. (Note: we examined the inline and everything-broken-out
+  options. We did not examine intermediate solutions because people were
+  happy with the everything-broken-out option.) One reason people like
+  this is because, if the names of subroutines are good, then you can
+  easily get a high-level view of what the code is doing. Also, this
+  lends itself better to unit tests.
   
 - What (if anything) of the split-out things should be lumped together
   into a single subroutine, vs. each logically coherent thing being in
@@ -31,7 +36,8 @@ Vertenstein.
   *should* we? Similarly, we could combine the setting of tracer fluxes
   with the related state updates.
   
-  **From discussion:** Let's start with what we have now.
+  **From discussion:** Let's start with what we have now, with more
+  subroutines. We could always combine them more later.
   
 - For subroutines that operate on all tracers (or bulk + all tracers):
   should the loop over tracers be inside or outside the subroutine? Note
@@ -43,6 +49,9 @@ Vertenstein.
   the subroutine. It's possible to have associates for individual
   variables otherwise, but this should probably be done via nested
   associates, which gets a bit more complex.
+  
+  **From discussion:** No opinions. Update: based on the answer to the
+  below question, I'll keep the loops outside the routines.
   
 - Should we pass derived types into the subroutines or individual
   arrays? The former leads to simpler, more stable interfaces, but the
@@ -62,8 +71,9 @@ Vertenstein.
   solution.
   
   **From discussion:** Pass individual arrays for anything that operates
-  on bulk. For things just calculating tracer fluxes, no strong
-  feelings.
+  on bulk for (1) better ability to trace data flow, and (2) ability to
+  declare variable intent. For things just calculating tracer fluxes, no
+  strong feelings.
 
 # Reasons I was at least initially inclined to having things broken out
 
@@ -81,11 +91,11 @@ Vertenstein.
   we are prone to for the ciso code). When you mix high-level
   coordination with lower-level science equations, I find it harder to
   understand: if you're interested in the high-level logic, you get
-  distracted by the low-level equations, and vice versa
+  distracted by the low-level equations, and vice versa.
 
 - Putting state updates in their own routine is a step closer to being
   able to separate physics from numerics (at least, I *think* that will
-  help long-term)
+  help long-term).
   
 - I worry that having everything inlined will lead to more degradation
   of the code over time: sections will grow and start to include things
@@ -136,13 +146,6 @@ Arguments for (2):
 
 # Other notes from discussion
 
-## General feelings on options
-
-People are happy with everything broken out. (Note: we examined the
-inline and everything-broken-out options. We did not examine
-intermediate solutions because people were happy with the
-everything-broken-out option.)
-
 ## Short-circuiting some state updates?
 
 Sean: Can we short-circuit some state updates? In particular: For canopy
@@ -166,8 +169,8 @@ Rename PrecipInputs to make it clear that irrigation is added?
 
 Let's pass col directly rather than using it.
 
-## Comments about state vs. flux
+## Comments about whether a subroutine is a state update vs. flux calculation
 
 Comment whether something is a state update?
 
-Actually, use prefixes
+Actually, use prefixes on subroutine name to make this more clear.
