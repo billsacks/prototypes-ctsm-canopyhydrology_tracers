@@ -174,3 +174,23 @@ Let's pass col directly rather than using it.
 Comment whether something is a state update?
 
 Actually, use prefixes on subroutine name to make this more clear.
+
+# Notes after discussion
+
+## (2019-05-03)
+
+I lean slightly towards the solution that passes individual arrays for
+all routines (not just those that operate on bulk). This adds long
+argument lists for the tracer-only routines, but keeps the tracer-only
+routines consistent with the bulk-only or bulk-and-tracer routines. In
+addition to the consistency, I like this because I think this will make
+it more likely for the sources (for state updates & tracer updates) to
+stay in sync: I think it will be easier for someone to notice that they
+need to change the argument list for the tracer flux update routine.
+
+Note that, for the argument names to the tracer flux updating routine,
+I'm using prefixes of `bulk_` and `trac_`. Using prefixes makes it more
+obvious if you accidentally use a tracer variable where bulk should go,
+or vice versa. Using `trac_` (rather than `tracer_`) makes the tracer
+variables the same number of characters as the bulk, letting you see
+that things are consistent at a glance.
