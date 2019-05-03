@@ -181,12 +181,12 @@ Actually, use prefixes on subroutine name to make this more clear.
 
 I think passing individual arguments greatly enhances the utility of the
 top-level coordination routine. However, it does lead to a lot more
-typing: (not counting to the actual use in the science code) each
-variable needs to be typed 5 times (2 in the call, 1 in the argument
-list, 1 in the argument declaration, 1 in the shr_assert), rather than 2
-times for the alternative (2 times in the associate statement within a
-routine). I favor read-time convenience over write-time convenience, so
-I think this is a win, but what do others think?
+typing: (not counting the actual use in the science code) each variable
+needs to be typed 5 times (2 in the call, 1 in the argument list, 1 in
+the argument declaration, 1 in the shr_assert), rather than 2 times for
+the alternative (2 times in the associate statement within a routine). I
+favor read-time convenience over write-time convenience, so I think this
+is a win, but what do others think?
 
 I have used associate statements for 'b' and 'w'. The former lets us
 access bulk and the latter lets us access the current bulk-or-tracer. I
