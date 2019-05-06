@@ -27,6 +27,7 @@ subroutine CanopyHydrology(bounds, num_soilp, filter_soilp, patch, water_inst)
   ! Note about filters: I'm pretty sure that I'm missing some settings that need to be
   ! done outside of the soil filter.
 
+  ! Compute patch-level precipitation inputs for bulk water and each tracer
   do i = water_inst%bulk_and_tracers_beg, water_inst%bulk_and_tracers_end
      associate(w => water_inst%bulk_and_tracers(i))
      call SumFlux_TopOfCanopyInputs(bounds, num_soilp, filter_soilp, &
@@ -40,6 +41,7 @@ subroutine CanopyHydrology(bounds, num_soilp, filter_soilp, patch, water_inst)
      end associate
   end do
 
+  ! Compute canopy interception and throughfall for bulk water
   call BulkFlux_CanopyInterceptionAndThroughfall(bounds, num_soilp, filter_soilp, &
        ! Inputs
        frac_veg_nosno        = canopystate_inst%frac_veg_nosno_patch(begp:endp), &
@@ -54,6 +56,7 @@ subroutine CanopyHydrology(bounds, num_soilp, filter_soilp, patch, water_inst)
        qflx_intercepted_rain = b%waterflux_inst%qflx_intercepted_rain_patch(begp:endp), &
        check_point_for_interception_and_excess = check_point_for_interception_and_excess(begp:endp))
 
+  ! Calculate canopy interception and throughfall for each tracer
   do i = water_inst%tracers_beg, water_inst%tracers_end
      associate(w => water_inst%bulk_and_tracers(i))
      call TracerFlux_CanopyInterceptionAndThroughfall(bounds, num_soilp, filter_soilp, &
@@ -74,6 +77,7 @@ subroutine CanopyHydrology(bounds, num_soilp, filter_soilp, patch, water_inst)
      end associate
   end do
 
+  ! Update snocan and liqcan based on interception, for bulk water and each tracer
   do i = water_inst%bulk_and_tracers_beg, water_inst%bulk_and_tracers_end
      associate(w => water_inst%bulk_and_tracers(i))
      call UpdateState_AddInterceptionToCanopy(bounds, num_soilp, filter_soilp, &
@@ -86,11 +90,13 @@ subroutine CanopyHydrology(bounds, num_soilp, filter_soilp, patch, water_inst)
      end associate
   end do
 
+  ! Compute runoff from canopy due to exceeding maximum storage, for bulk
   call BulkFlux_CanopyExcess(bounds, num_soilp, filter_soilp, &
        waterstatebulk_inst, &  ! and some other inputs...
        waterfluxbulk_inst, &
        check_point_for_interception_and_excess = check_point_for_interception_and_excess(begp:endp))
 
+  ! Calculate runoff from canopy due to exceeding maximum storage, for each tracer
   do i = water_inst%tracers_beg, water_inst%tracers_end
      call TracerFlux_CanopyExcess(bounds, num_soilp, filter_soilp, &
           water_inst%waterstatebulk_inst, water_inst%waterfluxbulk_inst, &
@@ -98,16 +104,19 @@ subroutine CanopyHydrology(bounds, num_soilp, filter_soilp, patch, water_inst)
           water_inst%bulk_and_tracers(i)%waterflux_inst)
   end do
 
+  ! Update snocan and liqcan based on canfall, for bulk water and each tracer
   do i = water_inst%bulk_and_tracers_beg, water_inst%bulk_and_tracers_end
      call UpdateState_RemoveCanfallFromCanopy(num_soilp, filter_soilp, &
           water_inst%bulk_and_tracers(i)%waterflux_inst, &
           water_inst%bulk_and_tracers(i)%waterstate_inst)
   end do
 
+  ! Compute snow unloading for bulk
   call BulkFlux_SnowUnloading(num_soilp, filter_soilp, &
        waterstatebulk_inst, &  ! and some other inputs...
        waterfluxbulk_inst)
 
+  ! Compute snow unloading for each tracer
   do i = water_inst%tracers_beg, water_inst%tracers_end
      call TracerFlux_SnowUnloading(bounds, num_soilp, filter_soilp, &
           water_inst%waterstatebulk_inst, water_inst%waterfluxbulk_inst, &
@@ -115,14 +124,16 @@ subroutine CanopyHydrology(bounds, num_soilp, filter_soilp, patch, water_inst)
           water_inst%bulk_and_tracers(i)%waterflux_inst)
   end do
 
+  ! Update snocan based on snow unloading, for bulk water and each tracer
   do i = water_inst%bulk_and_tracers_beg, water_inst%bulk_and_tracers_end
      call UpdateState_RemoveSnowUnloading(num_soilp, filter_soilp, &
           water_inst%bulk_and_tracers(i)%waterflux_inst, &
           water_inst%bulk_and_tracers(i)%waterstate_inst)
   end do
 
+  ! Compute summed fluxes onto ground, for bulk water and each tracer
   do i = water_inst%bulk_and_tracers_beg, water_inst%bulk_and_tracers_end
-     call SumFlux_OntoGround(num_soilp, filter_soilp, &
+     call SumFlux_FluxesOntoGround(num_soilp, filter_soilp, &
           water_inst%bulk_and_tracers(i)%waterflux_inst)
   end do
 
