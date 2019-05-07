@@ -34,9 +34,9 @@ subroutine CanopyHydrology(bounds, num_soilp, filter_soilp, patch, water_inst)
   ! Compute patch-level precipitation inputs for bulk water
   call SumFlux_TopOfCanopyInputs(bounds, num_soilp, filter_soilp, &
        ! Inputs
-       forc_rain             = w%wateratm2lnd_inst%forc_rain_col(begc:endc), &
-       qflx_irrig_sprinkler  = w%waterflux_inst%qflx_irrig_sprinkler_patch(begp:endp), &
-       forc_snow_col         = w%wateratm2lnd_inst%forc_snow_col(begc:endc), &
+       forc_rain             = b%wateratm2lnd_inst%forc_rain_col(begc:endc), &
+       qflx_irrig_sprinkler  = b%waterflux_inst%qflx_irrig_sprinkler_patch(begp:endp), &
+       forc_snow_col         = b%wateratm2lnd_inst%forc_snow_col(begc:endc), &
        ! Outputs
        qflx_liq_above_canopy = qflx_liq_above_canopy_patch(begp:endp), &
        forc_snow_patch       = forc_snow_patch(begp:endp))
