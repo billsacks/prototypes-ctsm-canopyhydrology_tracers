@@ -295,8 +295,20 @@ individual fluxes rather than summed fluxes, (2) that keeps these
 consistent with the mirror-image `qflx_intercepted_rain` and
 `qflx_intercepted_snow`, and (3) I can't see a good way to keep these
 local without requiring them and/or `qflx_liq_above_canopy` and
-`forc_snow_patch` to be stored with a separate tracer dimension.
+`forc_snow_patch` to be stored with a separate tracer dimension. (So I
+guess a tentative rule would be: store the more fundamental fluxes in
+the types, but can keep various auxiliary / summary things local to the
+subroutine that needs them. Here I'm thinking of the `qflx_through_*`
+fluxes as being somewhat more "fundamental" than the summed
+top-of-canopy inputs.)
 
 One option I could consider in the future is allowing local variables to
 have a separate tracer dimension as their last dimension (going from
-`bulk_and_tracer_beg` to `bulk_and_tracer_end`).
+`bulk_and_tracer_beg` to `bulk_and_tracer_end`). (I may want to check in
+with Mariana, and maybe others, about this at some point: okay to do
+this, even though it will mean an asymmetry between local variables and
+the way we handle variables in water types?) (I thought about introducing
+some type to be able to hold a locally-declared water tracer so that the
+handling of that would look more like the handling of variables in the
+main water types. But I think that may be more complexity than it's
+worth.)
