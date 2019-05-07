@@ -274,3 +274,7 @@ that 1 called from this coordination routine).
 One downside of this is that the tracer quantities will always have
 memory on the stack, even for runs without tracers. But I don't think
 this is a huge deal.
+
+However: I probably will NOT apply this to fluxes that appear in state
+updates, because long-term, we may want to move these state updates to
+some higher level.
