@@ -208,3 +208,32 @@ obvious if you accidentally use a tracer variable where bulk should go,
 or vice versa. Using `trac_` (rather than `tracer_`) makes the tracer
 variables the same number of characters as the bulk, letting you see
 that things are consistent at a glance.
+
+## (2019-05-07)
+
+### Need to change some local, temporary variables to be part of a water type?
+
+There are some local, temporary variables
+(`qflx_liq_above_canopy_patch`, `forc_snow_downscaled_patch`, and maybe
+others) that are now part of a water type, and so fill up memory
+throughout the run.
+
+I can see how we could avoid this by computing these variables at the
+last moment that we need them. This would be similar to what we do in
+Wateratm2lndType.F90: SetOneDownscaledTracer (see also the initial
+comment in https://github.com/ESCOMP/ctsm/issues/487): we set the
+col-level variable equal to the gridcell-level variable at the last
+possible moment. If we truly waited until the last possible moment,
+though, we'd end up recomputing them repeatedly for the bulk. We could
+store the bulk as a subroutine-local variable in the coordination
+routine (just calculating the tracer versions of these two variables in
+`TracerFlux_CanopyInterceptionAndThroughfall`); this would avoid
+repeated calculation of the bulk quantity, but it would break symmetry
+between the bulk and tracer in that tracer routine. In addition, it
+would make it harder if we eventually want to defer these tracer
+calculations until later in the driver loop (since the interface depends
+on pre-calculated variables for the bulk which would no longer be
+available).
+
+So, at least for now, I'm going to stick with storing these variables in
+the derived types.
