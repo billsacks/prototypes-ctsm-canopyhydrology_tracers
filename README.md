@@ -13,6 +13,10 @@ Vertenstein.
   way around it.)
   
   **From discussion:** People are okay with this.
+  
+  Update (2019-05-07) See some more notes on this below: today's notes,
+  under the heading, "Need to change some local, temporary variables to
+  be part of a water type?"
 
 # Some questions: organizing into subroutines
 
@@ -213,6 +217,8 @@ that things are consistent at a glance.
 
 ### Need to change some local, temporary variables to be part of a water type?
 
+#### Initial thoughts
+
 There are some local, temporary variables
 (`qflx_liq_above_canopy_patch`, `forc_snow_downscaled_patch`, and maybe
 others) that are now part of a water type, and so fill up memory
@@ -238,8 +244,33 @@ compromise solution, where store the bulk quantity in the bulk-only
 type, but calculate the tracer version locally.) Finally, I feel like
 these various alternatives are generally more complicated and
 confusing - e.g., if the bulk and tracer quantities are computed in
-different places.
+different places; this could also make it more likely that the tracer
+and bulk calculations get out of sync.
 
 So, at least for now, I'm going to stick with storing these variables in
 the derived types. But I could imagine revisiting this, particularly if
 we're running into this sort of thing a lot.
+
+#### Updated thoughts
+
+Upon further reflection, I see a way I like: First, just calculate these
+quantities for the bulk. Then have the coordination routine calculate
+these quantities for each tracer just before calling the
+`TracerFlux_CanopyInterceptionAndThroughfall` routine (rather than
+calling `SumFlux_TopOfCanopyInputs` from within
+`TracerFlux_CanopyInterceptionAndThroughfall`, which would lead to the
+asymmetry that I didn't like). This allows us to keep variables local
+that should be local (which is good for code understandability as well
+as memory use and performance), and keeps things fairly symmetrical
+between the bulk and tracers.
+
+This won't work if we ever move the tracer calculation outside of this
+coordination routine, but (a) we can cross this bridge when we come to
+it, and (b) maybe we'll want to keep the tracer calculations in this
+coordination routine long-term anyway (e.g., maybe we'll want to
+consolidate the current 3 TracerFlux routines into 1, but still keep
+that 1 called from this coordination routine).
+
+One downside of this is that the tracer quantities will always have
+memory on the stack, even for runs without tracers. But I don't think
+this is a huge deal.
