@@ -273,7 +273,13 @@ that 1 called from this coordination routine).
 
 One downside of this is that the tracer quantities will always have
 memory on the stack, even for runs without tracers. But I don't think
-this is a huge deal.
+this is a huge deal. Another downside is that there is an additional
+call to `SumFlux_TopOfCanopyInputs`, and it's slightly less obvious that
+the tracers and bulk are doing the same thing.
+
+Overall, I don't feel strongly about this, though, and could be
+convinced to go back to the earlier idea of moving all of these
+could-be-local variables into types.
 
 However: I probably will NOT apply this to fluxes that appear in state
 updates, because long-term, we may want to move these state updates to
