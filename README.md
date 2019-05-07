@@ -284,3 +284,19 @@ could-be-local variables into types.
 However: I probably will NOT apply this to fluxes that appear in state
 updates, because long-term, we may want to move these state updates to
 some higher level.
+
+What about `qflx_through_snow` and `qflx_through_rain`? These could
+possibly remain local, since they aren't directly involved in state
+updates: they are eventually added with other fluxes in
+`SumFlux_FluxesOntoGround`. However, I think I'll move them to
+waterflux_type because (1) that's needed (or at least consistent with
+the above paragraph) if we ever change the state updates to use
+individual fluxes rather than summed fluxes, (2) that keeps these
+consistent with the mirror-image `qflx_intercepted_rain` and
+`qflx_intercepted_snow`, and (3) I can't see a good way to keep these
+local without requiring them and/or `qflx_liq_above_canopy` and
+`forc_snow_patch` to be stored with a separate tracer dimension.
+
+One option I could consider in the future is allowing local variables to
+have a separate tracer dimension as their last dimension (going from
+`bulk_and_tracer_beg` to `bulk_and_tracer_end`).
