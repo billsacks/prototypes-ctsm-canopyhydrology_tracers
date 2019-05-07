@@ -231,9 +231,15 @@ routine (just calculating the tracer versions of these two variables in
 repeated calculation of the bulk quantity, but it would break symmetry
 between the bulk and tracer in that tracer routine. In addition, it
 would make it harder if we eventually want to defer these tracer
-calculations until later in the driver loop (since the interface depends
+calculations until later in the driver loop, since the interface depends
 on pre-calculated variables for the bulk which would no longer be
-available).
+available. (Though we could get around that last point by doing a
+compromise solution, where store the bulk quantity in the bulk-only
+type, but calculate the tracer version locally.) Finally, I feel like
+these various alternatives are generally more complicated and
+confusing - e.g., if the bulk and tracer quantities are computed in
+different places.
 
 So, at least for now, I'm going to stick with storing these variables in
-the derived types.
+the derived types. But I could imagine revisiting this, particularly if
+we're running into this sort of thing a lot.
