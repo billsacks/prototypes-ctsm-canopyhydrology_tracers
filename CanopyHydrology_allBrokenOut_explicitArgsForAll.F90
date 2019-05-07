@@ -20,8 +20,8 @@ subroutine CanopyHydrology(bounds, num_soilp, filter_soilp, patch, water_inst)
   real(r8) :: tracer_forc_snow_patch(bounds%begp:bounds%endp)
 
   associate( &
-       ! b%waterflux_inst refers to the bulk waterflux inst, etc.
-       b => water_inst%bulk_and_tracers(i_bulk), &
+       b_wateratm2lnd_inst => water_inst%wateratm2lndbulk_inst, &
+       b_waterflux_inst    => water_inst%waterfluxbulk_inst, &
        begp => bounds%begp, &
        endp => bounds%endp, &
        begc => bounds%begc, &
@@ -34,9 +34,9 @@ subroutine CanopyHydrology(bounds, num_soilp, filter_soilp, patch, water_inst)
   ! Compute patch-level precipitation inputs for bulk water
   call SumFlux_TopOfCanopyInputs(bounds, num_soilp, filter_soilp, &
        ! Inputs
-       forc_rain             = b%wateratm2lnd_inst%forc_rain_col(begc:endc), &
-       qflx_irrig_sprinkler  = b%waterflux_inst%qflx_irrig_sprinkler_patch(begp:endp), &
-       forc_snow_col         = b%wateratm2lnd_inst%forc_snow_col(begc:endc), &
+       forc_rain             = b_wateratm2lnd_inst%forc_rain_col(begc:endc), &
+       qflx_irrig_sprinkler  = b_waterflux_inst%qflx_irrig_sprinkler_patch(begp:endp), &
+       forc_snow_col         = b_wateratm2lnd_inst%forc_snow_col(begc:endc), &
        ! Outputs
        qflx_liq_above_canopy = qflx_liq_above_canopy_patch(begp:endp), &
        forc_snow_patch       = forc_snow_patch(begp:endp))
@@ -50,10 +50,10 @@ subroutine CanopyHydrology(bounds, num_soilp, filter_soilp, patch, water_inst)
        forc_snow             = forc_snow_patch(begp:endp), &
        qflx_liq_above_canopy = qflx_liq_above_canopy_patch(begp:endp), &
        ! Outputs
-       qflx_through_snow     = b%waterflux_inst%qflx_through_snow_patch(begp:endp), &
-       qflx_through_rain     = b%waterflux_inst%qflx_through_rain_patch(begp:endp), &
-       qflx_intercepted_snow = b%waterflux_inst%qflx_intercepted_snow_patch(begp:endp), &
-       qflx_intercepted_rain = b%waterflux_inst%qflx_intercepted_rain_patch(begp:endp), &
+       qflx_through_snow     = b_waterflux_inst%qflx_through_snow_patch(begp:endp), &
+       qflx_through_rain     = b_waterflux_inst%qflx_through_rain_patch(begp:endp), &
+       qflx_intercepted_snow = b_waterflux_inst%qflx_intercepted_snow_patch(begp:endp), &
+       qflx_intercepted_rain = b_waterflux_inst%qflx_intercepted_rain_patch(begp:endp), &
        check_point_for_interception_and_excess = check_point_for_interception_and_excess(begp:endp))
 
   ! Calculate canopy interception and throughfall for each tracer
@@ -72,10 +72,10 @@ subroutine CanopyHydrology(bounds, num_soilp, filter_soilp, patch, water_inst)
           ! Inputs
           bulk_forc_snow             = forc_snow_patch(begp:endp), &
           bulk_qflx_liq_above_canopy = qflx_liq_above_canopy_patch(begp:endp), &
-          bulk_qflx_through_snow     = b%waterflux_inst%qflx_through_snow_patch(begp:endp), &
-          bulk_qflx_intercepted_snow = b%waterflux_inst%qflx_intercepted_snow_patch(begp:endp), &
-          bulk_qflx_through_rain     = b%waterflux_inst%qflx_through_rain_patch(begp:endp), &
-          bulk_qflx_intercepted_rain = b%waterflux_inst%qflx_intercepted_rain_patch(begp:endp), &
+          bulk_qflx_through_snow     = b_waterflux_inst%qflx_through_snow_patch(begp:endp), &
+          bulk_qflx_intercepted_snow = b_waterflux_inst%qflx_intercepted_snow_patch(begp:endp), &
+          bulk_qflx_through_rain     = b_waterflux_inst%qflx_through_rain_patch(begp:endp), &
+          bulk_qflx_intercepted_rain = b_waterflux_inst%qflx_intercepted_rain_patch(begp:endp), &
           trac_forc_snow             = tracer_forc_snow_patch(begp:endp), &
           trac_qflx_liq_above_canopy = tracer_qflx_liq_above_canopy_patch(begp:endp), &
           ! Outputs
