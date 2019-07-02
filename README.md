@@ -312,3 +312,17 @@ some type to be able to hold a locally-declared water tracer so that the
 handling of that would look more like the handling of variables in the
 main water types. But I think that may be more complexity than it's
 worth.)
+
+#### More updated thoughts (2019-07-02) - though I don't really like this idea
+
+One other option I thought about is putting the calculation of these
+temporary patch-level fluxes inside
+`TracerFlux_CanopyInterceptionAndThroughfall`, as I was considering
+earlier. But the bulk fluxes would be stored in the coordination routine
+and passed in as subroutine arguments. There would then be a
+`first_tracer` logical flag that is true for the first tracer and false
+for the others; the bulk fluxes would only be set if this is true
+(otherwise we'd use the already-computed values). This could be an okay
+option that avoids performance problems But I don't generally like code
+that uses a `first_time` flag, and I prefer the above solution (under
+"Updated thoughts").
